@@ -373,13 +373,13 @@ namespace WooCommerceApi.Contexts
                 if (attr == null)
                 {
                     string createdAttribute = CreateAttribute(attToCreate);
-                    attributes.Add(new WooAttribute
+                    attr = new WooAttribute
                     {
                         Id = createdAttribute,
                         Name = attToCreate.Name,
-                    });
+                    };
+                    attributes.Add(attr);
                     string createdTerm = CreateAttributeTerm(createdAttribute, attToCreate.Value);
-                    attr.Id = createdAttribute;
                 }
                 else
                 {
@@ -405,11 +405,54 @@ namespace WooCommerceApi.Contexts
                     Option = attToCreate.Value
                 });
             }
+            //UpdateVariableProductAttributes(variableId, wooProduct.Attributes);
 
             var request = new RestRequest(endPoint, Method.Post);
             var createdProduct = SendRequest<WooProductVariation>(request, wooProduct, excludedFields).Result;
             return createdProduct.Id;
         }
+
+        //private void UpdateVariableProductAttributes(string variableId, List<WooAttribute> attributes)
+        //{
+        //    string endpoint = $"products/{variableId}";
+
+        //    WebProduct variableProduct = GetProductById(variableId);
+        //    if (variableProduct.Attributes == null)
+        //    {
+        //        variableProduct.Attributes = new List<WebApi.Models.Attribute>();
+        //    }
+
+        //    // Add incoming attributes
+        //    foreach (var attribute in attributes)
+        //    {
+        //        variableProduct.Attributes.Add(new WebApi.Models.Attribute
+        //        {
+        //            Id = attribute.Id,
+        //            Name = attribute.Name,
+        //            Value = attribute.Option
+        //        });
+        //    }
+
+        //    // GROUP BY id + name and collect values
+        //    var groupedAttributes = variableProduct.Attributes
+        //        .GroupBy(a => new { a.Name })
+        //        .Select(g => new
+        //        {
+        //            name = g.Key.Name,
+        //            options = g.Select(x => x.Value).Distinct().ToList()
+        //        })
+        //        .ToList();
+
+        //    var request = new RestRequest(endpoint, Method.Patch);
+
+        //    var body = new
+        //    {
+        //        attributes = groupedAttributes
+        //    };
+
+        //    var createdProduct = SendRequest<object>(request, body).Result;
+        //}
+
         private string CreateAttribute(WebApi.Models.Attribute attribute)
         {
             const string endpoint = "products/attributes";
