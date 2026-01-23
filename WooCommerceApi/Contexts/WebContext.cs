@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -306,111 +307,62 @@ namespace WooCommerceApi.Contexts
         public new string CreateVariableProduct(WebProduct variableProduct, List<ExcludedFields> excludedFields = null)
         {
             const string endpoint = "products";
-            var wooProduct = WooCommerceConverters.ToWooVariableProduct(variableProduct);
 
-            var attributes = GetWooAttributes();
-            foreach (var attToCreate in variableProduct.Attributes)
+            var body = new
             {
-                var attr = attributes.FirstOrDefault(a => a.Name == attToCreate.Name);
-                if (attr == null)
-                {
-                    string createdAttribute = CreateAttribute(attToCreate);
-                    attributes.Add(new WooAttribute
+                name = variableProduct.Name,
+                description = variableProduct.Description,
+                manage_stock = true,
+                stock_quantity = variableProduct.StockQuantity,
+                sku = variableProduct.Sku,
+                status = "draft",
+                type = "variable",
+                categories = variableProduct.Categories?.Select(c => new { id = c.Id }).ToList(),
+                attributes = variableProduct.Attributes
+                    .GroupBy(a => a.Name)
+                    .Select(g => new
                     {
-                        Id = createdAttribute,
-                        Name = attToCreate.Name,
-                    });
-                    string createdTerm = CreateAttributeTerm(createdAttribute, attToCreate.Value);
-                    attToCreate.Id = createdAttribute;
-                }
-                else
-                {
-                    attToCreate.Id = attr.Id;
-                    var termExists = false;
-                    var attributeTerms = GetAttributeTerms(attToCreate.Id);
-                    foreach (var term in attributeTerms)
-                    {
-                        if (term.Name == attToCreate.Value)
-                        {
-                            termExists = true;
-                            break;
-                        }
-                    }
-                    if (!termExists)
-                    {
-                        CreateAttributeTerm(attToCreate.Id, attToCreate.Value);
-                    }
-                }
-                var existingAttribute = wooProduct.Attributes.FirstOrDefault(a => a.Name == attToCreate.Name);
-                if (existingAttribute == null)
-                {
-                    wooProduct.Attributes.Add(new WooAttribute
-                    {
-                        Id = attToCreate.Id,
-                        Name = attToCreate.Name,
-                        Option = attToCreate.Value,
-                        Options = new List<string>()
-                    });
-                }
-                existingAttribute = wooProduct.Attributes.FirstOrDefault(a => a.Name == attToCreate.Name);
-                existingAttribute.Options.Add(attToCreate.Value);
-            }
+                        name = g.Key,
+                        variation = true,
+                        options = g.Select(a => a.Value).Distinct().ToList()
+                    })
+                    .ToList()
+            };
 
             var request = new RestRequest(endpoint, Method.Post);
-            var createdProduct = SendRequest<WooProduct>(request, wooProduct, excludedFields).Result;
+            var createdProduct = SendRequest<WooProduct>(request, body, excludedFields).Result;
             return createdProduct.Id;
         }
+
+
         public new string CreateVariationProduct(string variableId, WebProduct variationProduct, List<ExcludedFields> excludedFields = null)
         {
-            var endPoint = $"products/{variableId}/variations";
-            WooProductVariation wooProduct = WooCommerceConverters.ToWooVariationProduct(variationProduct);
-            wooProduct.Attributes = new List<WooAttribute>();
+            var endpoint = $"products/{variableId}/variations";
 
-            var attributes = GetWooAttributes();
-            foreach (var attToCreate in variationProduct.Attributes)
+            var body = new
             {
-                var attr = attributes.FirstOrDefault(a => a.Name == attToCreate.Name);
-                if (attr == null)
-                {
-                    string createdAttribute = CreateAttribute(attToCreate);
-                    attr = new WooAttribute
+                name = variationProduct.Name,
+                regular_price = ((int)variationProduct.RegularPrice).ToString(CultureInfo.InvariantCulture),
+                sale_price = ((int?)variationProduct.SalePrice)?.ToString(CultureInfo.InvariantCulture),
+                manage_stock = true,
+                stock_quantity = variationProduct.StockQuantity,
+                sku = variationProduct.Sku,
+                type = "variation",
+                attributes = variationProduct.Attributes
+                    .Select(a => new
                     {
-                        Id = createdAttribute,
-                        Name = attToCreate.Name,
-                    };
-                    attributes.Add(attr);
-                    string createdTerm = CreateAttributeTerm(createdAttribute, attToCreate.Value);
-                }
-                else
-                {
-                    var termExists = false;
-                    var attributeTerms = GetAttributeTerms(attr.Id);
-                    foreach (var term in attributeTerms)
-                    {
-                        if (term.Name == attToCreate.Value)
-                        {
-                            termExists = true;
-                            break;
-                        }
-                    }
-                    if (!termExists)
-                    {
-                        CreateAttributeTerm(attr.Id, attToCreate.Value);
-                    }
-                }
-                wooProduct.Attributes.Add(new WooAttribute
-                {
-                    Id = attr.Id,
-                    Name = attToCreate.Name,
-                    Option = attToCreate.Value
-                });
-            }
-            //UpdateVariableProductAttributes(variableId, wooProduct.Attributes);
+                        name = a.Name,
+                        option = a.Value
+                    })
+                    .ToList()
+            };
 
-            var request = new RestRequest(endPoint, Method.Post);
-            var createdProduct = SendRequest<WooProductVariation>(request, wooProduct, excludedFields).Result;
+            var request = new RestRequest(endpoint, Method.Post);
+            var createdProduct = SendRequest<WooProductVariation>(request, body, excludedFields).Result;
             return createdProduct.Id;
         }
+
+
 
         //private void UpdateVariableProductAttributes(string variableId, List<WooAttribute> attributes)
         //{
@@ -676,6 +628,27 @@ namespace WooCommerceApi.Contexts
         }
         public new void UpdateVariationProduct(string variableId, WebProduct variationProduct, List<ExcludedFields> excludedFields = null)
         {
+
+            // TODO: Remove this section of code after create UpdateVariableProduct method:
+            if (variableId == "-1")
+            {
+                var updateBody = new
+                {
+                    attributes = variationProduct.Attributes
+                .GroupBy(a => a.Name)
+                .Select(g => new
+                {
+                    name = g.Key,
+                    variation = true,
+                    options = g.Select(a => a.Value).Distinct().ToList()
+                })
+                .ToList()
+                };
+                var request1 = new RestRequest($"products/{variationProduct.Id}", Method.Put);
+                SendRequest<WooProduct>(request1, updateBody);
+                return;
+            }
+
             if (excludedFields == null)
             {
                 excludedFields = new List<ExcludedFields>();
