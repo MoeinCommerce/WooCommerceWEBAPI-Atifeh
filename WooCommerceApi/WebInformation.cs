@@ -12,7 +12,7 @@ namespace WooCommerceApi
     {
         public string Name => "WooCommerceApi";
 
-        public string DisplayName => "افزونه وردپرس";
+        public string DisplayName => "افزونه وردپرس اختصاصی آقای عطیفه";
 
         public string Description => "This is a dll that stores all wooCommerce api";
 
