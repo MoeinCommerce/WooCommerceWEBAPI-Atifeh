@@ -38,7 +38,7 @@ namespace WooCommerceApi.Helpers
                 RegularPrice = ((int)webProduct.RegularPrice).ToString(CultureInfo.InvariantCulture),
                 SalePrice = ((int)webProduct.RegularPrice).ToString(CultureInfo.InvariantCulture),
                 ManageStock = "true",
-                StockQuantity = webProduct.StockQuantity.ToString(),
+                StockQuantity = ((int)Math.Floor(webProduct.StockQuantity)).ToString(),
                 Sku = webProduct.Sku,
                 Categories = webProduct.Categories?.Select(c => new MinimalWooCategory
                 {
@@ -55,7 +55,7 @@ namespace WooCommerceApi.Helpers
                 Name = webProduct.Name,
                 Description = webProduct.Description,
                 ManageStock = "true",
-                StockQuantity = webProduct.StockQuantity.ToString(),
+                StockQuantity = ((int)Math.Floor(webProduct.StockQuantity)).ToString(),
                 Sku = webProduct.Sku,
                 Categories = webProduct.Categories?.Select(c => new MinimalWooCategory
                 {
@@ -82,7 +82,7 @@ namespace WooCommerceApi.Helpers
                 RegularPrice = ((int)webProduct.RegularPrice).ToString(CultureInfo.InvariantCulture),
                 SalePrice = ((int)webProduct.RegularPrice).ToString(CultureInfo.InvariantCulture),
                 ManageStock = "true",
-                StockQuantity = webProduct.StockQuantity.ToString(),
+                StockQuantity = ((int)Math.Floor(webProduct.StockQuantity)).ToString(),
                 Sku = webProduct.Sku,
                 Type = "variation",
             };
